@@ -17,23 +17,6 @@
 #define SKID_TIMES 60
 #define DELAY 300
 
-// POSITION EXTREMES
-#define LEFT_EXTREME
-#define RIGHT_EXTREME
-#define CLOSE_EXTREME
-#define FAR_EXTREME
-
-// POSITION FACTORS
-#define X_DISTANCE_FACTOR
-#define Y_DISTANCE_FACTOR /// ??? wtf experiment and find out
-
-// SPEED TOLERANCE
-#define SPEED_THRESHOLD
-
-// LINEAR_TRANSITION_TOLERANCE
-#define X_TRANSITION_THRESHOLD
-#define Y_TRANSITION_THRESHOLD
-
 // ================================================================================
 // Import the third-party AccelStepper library.
 #include <AccelStepper.h>
@@ -63,9 +46,8 @@ void setup(void)
   // enable the drivers, the motors will remain constantly energized
   digitalWrite(STEPPER_ENABLE_PIN, LOW);
 
-  //pixy.init();
-
-  move(0, 0, true);
+  move(0, 0, true); // initialize to origin
+  
   delay(1000);
 }
 /****************************************************************/
@@ -82,6 +64,8 @@ bool is_moving(void)
 }
 
 /// Move a relative displacement at the current speed, blocking until the move is done.
+/// toMode as a boolean indicates if the move is to be made absolute or relative. false for
+/// relative and true for absolute
 void move(long x, long y, bool toMode)
 {
   if (toMode) {
@@ -97,6 +81,12 @@ void move(long x, long y, bool toMode)
   } while(is_moving());
 }
 
+/*
+ *  track: tracks the paper linearly, foward or backward to some degree
+ *  @param: degree: moves paper by degrees forward or backward
+ *  @param: dir: indicates which direction is the paper to be tracked
+ *               - forward (F) or backward (B)
+ */
 void track(int degree, char dir) {
   if (dir == 'B') {
     move(degree, -degree, false);
@@ -105,16 +95,29 @@ void track(int degree, char dir) {
   }
 }
 
+/*
+ * turnClockwise: moves paper by degrees clockwise
+ * @param: degree: moves paper by degrees clockwise
+ */
 void turnClockwise(int degree) {
   move(degree, degree, false);  
 }
 
+/*
+ * turnAntiClockwise: moves paper by degrees anticlockwise
+ * @param: degree: moves paper by degrees anticlockwise
+ */
 void turnAntiClockwise(int degree) {
   move(-1 * degree, -1 * degree, false);
 }
 
+/*
+ * skid: skids the paper SKID number of times as defined by the constant
+ *       at the start of the file, by degrees
+ * @param: degree: degree by which the paper is skid
+ */
 void skid(int degree) {
-  int dir = 0;
+  int dir = 0; // helps flip skid direction
   for (int i = 0; i < SKID_TIMES; i += 1) {
       if (dir == 0) {
         turnClockwise(degree + i / 5.0);
@@ -128,73 +131,57 @@ void skid(int degree) {
   }
 }
 
-char getCommand() {
-  Serial.println("Enter command: ");
+/*
+ * getCharFromCmd: retrieves char type from serial monitor
+ *                 by displaying the user prompt
+ * @param: prompt: prompt to be shown to the user
+ */
+char getCharFromCmd(String prompt) {
+  Serial.println(prompt);
   while(!Serial.available()) {
     delay(10);
   } 
   return Serial.read();
 }
 
-char getDirection() {
-  Serial.println("Enter direction: ");
-  while(!Serial.available()) {
-    delay(10);  
-  }
-  return Serial.read();
-}
-
-int getDegree() {
-  Serial.println("Enter degree: ");
+/*
+ * getIntFromCmd: retrieves int type from serial monitor
+ *                by displaying the user prompt
+ * @param: prompt: prompt to be shown to the user
+ */
+int getIntFromCmd(String prompt) {
+  Serial.println(prompt);
   while(!Serial.available()) {
     delay(10);
   }
   return Serial.parseInt();
 }
 
-
-
 /****************************************************************/
 /// Run one iteration of the main loop.  The Arduino system will call this
 /// function over and over forever.  This implementation is a script which will
 /// generate a series of movements, waiting for each to complete.
 void loop(){
-    
-//    unsigned long lastTime = millis();
-//  
-//    pixy.ccc.getBlocks();
-//  
-//    // If there are detect blocks, print them!
-//    if (pixy.ccc.numBlocks) {
-//      Serial.print("Detected ");
-//      Serial.println(pixy.ccc.numBlocks);
-//      for (int i=0; i<pixy.ccc.numBlocks; i++)
-//      {
-//        Serial.print("  block ");
-//        Serial.print(i);
-//        Serial.print(": ");
-//        Serial.println(pixy.ccc.blocks[i].m_age);
-//        Serial.print("Frame time: ");
-//        Serial.println(millis() - lastTime);
-//      }
-//    }  
-//  
-  switch (getCommand()) {
+  
+  String getDegree = "Enter degree (0 - 360): ";
+  String getCommand = "Enter command (L, R, T, or S): ";
+  String getDirection = "Enter direction (B or F): ";
+  
+  switch (getCharFromCmd(getCommand)) {
     case 'L':
-      turnAntiClockwise(getDegree());
+      turnAntiClockwise(getIntFromCmd(getDegree));
       break; 
     case 'R':
-      turnClockwise(getDegree());
+      turnClockwise(getIntFromCmd(getDegree));
       break;
     case 'T':
-      track(getDegree(), getDirection());
+      track(getIntFromCmd(getDegree), getCharFromCmd(getDirection));
       break;
     case 'S':
-      skid(getDegree());
+      skid(getIntFromCmd(getDegree));
       break;
     default:
       Serial.println("Command not recognized");   
   }
-    //track(360);
 }
 /****************************************************************/
