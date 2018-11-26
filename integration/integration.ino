@@ -32,7 +32,7 @@
 #define BAUD_RATE 115200
 
 // QUEUE SPECS
-#define QUEUE_SIZE 3
+#define QUEUE_SIZE 5
 
 #include <Pixy2.h>
 #include <AccelStepper.h>
@@ -410,6 +410,10 @@ void loop() {
     uint16_t x = pixy.ccc.blocks[0].m_x;
     uint16_t y = pixy.ccc.blocks[0].m_y;
 
+    Serial.println(pixy.ccc.blocks[0].m_x); // only take most relevant block
+    Serial.print("Y value = ");
+    Serial.println(pixy.ccc.blocks[0].m_y);
+
     if (!isSetup) {
       frameListSetup(x, y);  
     } else {
@@ -421,9 +425,5 @@ void loop() {
   
         decideMove();  
     }
-
-    Serial.println(pixy.ccc.blocks[0].m_x); // only take most relevant block
-    Serial.print("Y value = ");
-    Serial.println(pixy.ccc.blocks[0].m_y);
   }  
 }

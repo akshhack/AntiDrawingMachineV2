@@ -3,8 +3,8 @@
 #define Y_DISTANCE_FACTOR 3.75
 
 // SPEED TOLERANCE
-#define SPEED_THRESHOLD_UPPER
-#define SPEED_THRESHOLD_LOWER
+#define SPEED_THRESHOLD_UPPER 40 
+#define SPEED_THRESHOLD_LOWER 15
 
 // LINEAR_TRANSITION_TOLERANCE
 #define X_TOLERANCE 1.0
@@ -51,7 +51,7 @@ typedef struct {
 PenPosition posInit = {0, 0};
 PenVelocity velInit = {0.0, 0.0};
 PenMotion penMotion = {&posInit, &velInit, {&posInit, &posInit, &posInit}};
-PenState penState = {false, false, false, false, ''};
+PenState penState = {false, false, false, false, 'N'};
 bool isSetup = false;
 int setupCounter = 0;
 
@@ -77,7 +77,7 @@ void decideHorizontal() {
       break;  
     } 
   }
-  penState.isHorizontal = isHorizontal
+  penState.isHorizontal = isHorizontal;
 }
 
 void decideVertical() {
@@ -92,19 +92,19 @@ void decideVertical() {
       break;  
     } 
   }
-  penState.isVertical = isVertical
+  penState.isVertical = isVertical;
 }
 
 void decideFast() {
   double penSpeed = sqrt(penMotion.vel->vx * penMotion.vel->vx + penMotion.vel->vy * penMotion.vel->vy);
 
-  penState.isFast = penSpeed > SPEED_THRESHOLD_UPPER;
+  penState.isFast = (penSpeed > SPEED_THRESHOLD_UPPER);
 }
 
 void decideSlow() {
   double penSpeed = sqrt(penMotion.vel->vx * penMotion.vel->vx + penMotion.vel->vy * penMotion.vel->vy);
 
-  penState.isFast = penSpeed < SPEED_THRESHOLD_LOWER;  
+  penState.isFast = (penSpeed < SPEED_THRESHOLD_LOWER);  
 }
 
 void decideDirection() {
@@ -118,30 +118,30 @@ void decideDirection() {
   if (penMotion.vel->vx > 0 && penMotion.vel->vy > 0) {
     // NE  
     if (angle < PI / 4) {
-      penMotion.dir = 'E';
+      penState.dir = 'E';
     } else {
-        penMotion.dir = 'N';
+        penState.dir = 'N';
     }
   } else if (penMotion.vel->vx > 0 && penMotion.vel->vy < 0) {
     // SE
     if (angle < PI / 4) {
-      penMotion.dir = 'E';
+      penState.dir = 'E';
     } else {
-        penMotion.dir = 'S';
+        penState.dir = 'S';
     }
   } else if (penMotion.vel->vx < 0 && penMotion.vel->vy > 0) {
     // NW
     if (angle < PI / 4) {
-      penMotion.dir = 'W';
+      penState.dir = 'W';
     } else {
-        penMotion.dir = 'N';
+        penState.dir = 'N';
     }
   } else {
     // SW
     if (angle < PI / 4) {
-      penMotion.dir = 'W';
+      penState.dir = 'W';
     } else {
-        penMotion.dir = 'S';
+        penState.dir = 'S';
     }
   }
 }
@@ -209,6 +209,26 @@ void decideMove() {
   decideSlow();
   decideDirection();
 
+  if (penState.isHorizontal == true) {
+    Serial.println("Pen is horizontal");  
+  } 
+
+  if (penState.isVertical == true) {
+    Serial.println("Pen is vertical");  
+  } 
+
+  if (penState.isFast == true) {
+    Serial.println("Pen is fast");  
+  }
+
+  if (penState.isSlow == true) {
+    Serial.println("Pen is slow");  
+  }
+
+  // pen direction
+  Serial.print("Pen direction is: ");
+  Serial.println(penState.dir);
+
   switch (penState.dir) {
     case 'N':
       // CHECK FOR LINEARITY
@@ -272,18 +292,36 @@ void decideMove() {
   }
 }
 
+void printFrameList() {
+  for (int i = QUEUE_SIZE - 1; i >= 0; i -= 1) {
+    Serial.print("Frame #: ");
+    Serial.println(i + 1);
+
+    Serial.print("X position: ");
+    Serial.println(penMotion.prevPositions[i]->x);
+    Serial.print("Y position: ");
+    Serial.println(penMotion.prevPositions[i]->y);
+  }  
+}
+
 void loop() {
 //  Serial.println(penMotion.pos->x);
+  //Serial.println("Getting blocks");
   pixy.ccc.getBlocks();
+  //Serial.println("Got blocks");
   // If there are detect blocks, print them!
   if (pixy.ccc.numBlocks) {
     uint16_t x = pixy.ccc.blocks[0].m_x;
     uint16_t y = pixy.ccc.blocks[0].m_y;
 
     if (!isSetup) {
+      Serial.begin("Setting up");
       frameListSetup(x, y);  
     } else {
+        Serial.begin("Set up complete");
         addBlockToFrameList(x, y);
+
+        //printFrameList();
   
         updatePenPosition();
       
@@ -292,6 +330,7 @@ void loop() {
         decideMove();  
     }
 
+    Serial.print("X value = ");
     Serial.println(pixy.ccc.blocks[0].m_x); // only take most relevant block
     Serial.print("Y value = ");
     Serial.println(pixy.ccc.blocks[0].m_y);
