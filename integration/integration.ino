@@ -69,11 +69,25 @@ typedef struct {
 } PenState;
 
 PenPosition posInit = {0, 0};
+PenPosition posInit1 = {0, 0};
+PenPosition posInit2 = {0, 0};
+PenPosition posInit3 = {0, 0};
+PenPosition posInit4 = {0, 0};
+PenPosition posInit5 = {0, 0};
+PenPosition posInit6 = {0, 0};
+PenPosition posInit7 = {0, 0};
+PenPosition posInit8 = {0, 0};
+PenPosition posInit9 = {0, 0};
+PenPosition posInit10 = {0, 0};
+
 PenVelocity velInit = {0.0, 0.0};
-PenMotion penMotion = {&posInit, &velInit, {&posInit, &posInit, &posInit}};
+PenMotion penMotion = {&posInit, &velInit, {&posInit1, &posInit2, &posInit3,
+                                            &posInit4, &posInit5, &posInit6,
+                                            &posInit7, &posInit8, &posInit9,
+                                            &posInit10}};
 PenState penState = {false, false, false, false, 'N'};
-bool isSetup = false;
 int setupCounter = 0;
+int moveCounter = 0;
 
 void setup() {
   digitalWrite(STEPPER_ENABLE_PIN, HIGH); // initialize drivers in disabled state
@@ -261,12 +275,10 @@ void decideDirection() {
 }
 
 void frameListSetup(uint16_t x, uint16_t y) {
-  if (setupCounter < QUEUE_SIZE - 1) {
+  if (setupCounter < QUEUE_SIZE) {
     penMotion.prevPositions[setupCounter]->x = x;
     penMotion.prevPositions[setupCounter]->y = y;
     setupCounter += 1; 
-  } else {
-      isSetup = true;  
   }
 }
 
@@ -303,8 +315,8 @@ void updatePenVelocities() {
     uint16_t x = penMotion.prevPositions[i]->x;
     uint16_t y = penMotion.prevPositions[i]->y; 
 
-    double velocityX = (mostRecentX * 1.0 - x) / (QUEUE_SIZE - 1 - i);
-    double velocityY = (mostRecentY * 1.0 - y) / (QUEUE_SIZE - 1 - i);
+    double velocityX = (mostRecentX * 1.0 - x) / ((QUEUE_SIZE - 1 - i) * FRAME_TIME);
+    double velocityY = (mostRecentY * 1.0 - y) / ((QUEUE_SIZE - 1 - i) * FRAME_TIME);
 
     velocitySumX += velocityX;
     velocitySumY += velocityY;
@@ -414,7 +426,7 @@ void loop() {
     Serial.print("Y value = ");
     Serial.println(pixy.ccc.blocks[0].m_y);
 
-    if (!isSetup) {
+    if (setupCounter < QUEUE_SIZE) {
       frameListSetup(x, y);  
     } else {
         addBlockToFrameList(x, y);
@@ -422,8 +434,13 @@ void loop() {
         updatePenPosition();
       
         updatePenVelocities();
-  
-        decideMove();  
+
+        if (moveCounter % 10 == 0) {
+          decideMove();
+          moveCounter = 0;  
+        }
+
+        moveCounter += 1;  
     }
   }  
 }

@@ -17,7 +17,7 @@
 #define BAUD_RATE 115200
 
 // QUEUE SPECS
-#define QUEUE_SIZE 3
+#define QUEUE_SIZE 10
 
 #include <Pixy2.h>
 
@@ -49,11 +49,25 @@ typedef struct {
 } PenState;
 
 PenPosition posInit = {0, 0};
+PenPosition posInit1 = {0, 0};
+PenPosition posInit2 = {0, 0};
+PenPosition posInit3 = {0, 0};
+PenPosition posInit4 = {0, 0};
+PenPosition posInit5 = {0, 0};
+PenPosition posInit6 = {0, 0};
+PenPosition posInit7 = {0, 0};
+PenPosition posInit8 = {0, 0};
+PenPosition posInit9 = {0, 0};
+PenPosition posInit10 = {0, 0};
+
 PenVelocity velInit = {0.0, 0.0};
-PenMotion penMotion = {&posInit, &velInit, {&posInit, &posInit, &posInit}};
+PenMotion penMotion = {&posInit, &velInit, {&posInit1, &posInit2, &posInit3,
+                                            &posInit4, &posInit5, &posInit6,
+                                            &posInit7, &posInit8, &posInit9,
+                                            &posInit10}};
 PenState penState = {false, false, false, false, 'N'};
-bool isSetup = false;
 int setupCounter = 0;
+int moveCounter = 0;
 
 void setup() {
   pixy.init();
@@ -104,7 +118,7 @@ void decideFast() {
 void decideSlow() {
   double penSpeed = sqrt(penMotion.vel->vx * penMotion.vel->vx + penMotion.vel->vy * penMotion.vel->vy);
 
-  penState.isFast = (penSpeed < SPEED_THRESHOLD_LOWER);  
+  penState.isSlow = (penSpeed < SPEED_THRESHOLD_LOWER);  
 }
 
 void decideDirection() {
@@ -147,12 +161,10 @@ void decideDirection() {
 }
 
 void frameListSetup(uint16_t x, uint16_t y) {
-  if (setupCounter < QUEUE_SIZE - 1) {
+  if (setupCounter < QUEUE_SIZE) {
     penMotion.prevPositions[setupCounter]->x = x;
     penMotion.prevPositions[setupCounter]->y = y;
     setupCounter += 1; 
-  } else {
-      isSetup = true;  
   }
 }
 
@@ -189,8 +201,8 @@ void updatePenVelocities() {
     uint16_t x = penMotion.prevPositions[i]->x;
     uint16_t y = penMotion.prevPositions[i]->y; 
 
-    double velocityX = (mostRecentX * 1.0 - x) / (QUEUE_SIZE - 1 - i);
-    double velocityY = (mostRecentY * 1.0 - y) / (QUEUE_SIZE - 1 - i);
+    double velocityX = (mostRecentX * 1.0 - x) / ((QUEUE_SIZE - 1 - i) * FRAME_TIME);
+    double velocityY = (mostRecentY * 1.0 - y) / ((QUEUE_SIZE - 1 - i) * FRAME_TIME);
 
     velocitySumX += velocityX;
     velocitySumY += velocityY;
@@ -314,7 +326,13 @@ void loop() {
     uint16_t x = pixy.ccc.blocks[0].m_x;
     uint16_t y = pixy.ccc.blocks[0].m_y;
 
-    if (!isSetup) {
+
+    Serial.print("X value = ");
+    Serial.println(pixy.ccc.blocks[0].m_x); // only take most relevant block
+    Serial.print("Y value = ");
+    Serial.println(pixy.ccc.blocks[0].m_y);
+
+    if (setupCounter < QUEUE_SIZE) {
       Serial.begin("Setting up");
       frameListSetup(x, y);  
     } else {
@@ -326,13 +344,13 @@ void loop() {
         updatePenPosition();
       
         updatePenVelocities();
-  
-        decideMove();  
-    }
 
-    Serial.print("X value = ");
-    Serial.println(pixy.ccc.blocks[0].m_x); // only take most relevant block
-    Serial.print("Y value = ");
-    Serial.println(pixy.ccc.blocks[0].m_y);
+        if (moveCounter % QUEUE_SIZE == 0) {
+          decideMove();
+          moveCounter = 0;  
+        }
+
+        moveCounter += 1;
+    }
   }  
 }
