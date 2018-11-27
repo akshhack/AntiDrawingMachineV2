@@ -80,13 +80,13 @@ void resetPenState() {
 }
 
 void decideHorizontal() {
-  uint16_t firstPosition = penMotion.prevPositions[0]->x;
+  uint16_t firstPosition = penMotion.prevPositions[0]->y;
   bool isHorizontal = true;
   // check if all positions are in tolerance of the firstPosition
   for (int i = 0; i < QUEUE_SIZE; i += 1) {
-    uint16_t currentPos = penMotion.prevPositions[i]->x;
-    if (currentPos < firstPosition - X_TOLERANCE || 
-        currentPos > firstPosition + X_TOLERANCE) {
+    uint16_t currentPos = penMotion.prevPositions[i]->y;
+    if (currentPos < firstPosition - Y_TOLERANCE || 
+        currentPos > firstPosition + Y_TOLERANCE) {
       isHorizontal = false;
       break;  
     } 
@@ -95,13 +95,13 @@ void decideHorizontal() {
 }
 
 void decideVertical() {
-  uint16_t firstPosition = penMotion.prevPositions[0]->y;
+  uint16_t firstPosition = penMotion.prevPositions[0]->x;
   bool isVertical = true;
   // check if all positions are in tolerance of the firstPosition
   for (int i = 0; i < QUEUE_SIZE; i += 1) {
-    uint16_t currentPos = penMotion.prevPositions[i]->y;
-    if (currentPos < firstPosition - Y_TOLERANCE || 
-        currentPos > firstPosition + Y_TOLERANCE) {
+    uint16_t currentPos = penMotion.prevPositions[i]->x;
+    if (currentPos < firstPosition - X_TOLERANCE || 
+        currentPos > firstPosition + X_TOLERANCE) {
       isVertical = false;
       break;  
     } 
@@ -122,40 +122,37 @@ void decideSlow() {
 }
 
 void decideDirection() {
-  double mag = sqrt(penMotion.vel->vx * penMotion.vel->vx + penMotion.vel->vy * penMotion.vel->vy);
-
+  
   double vy_abs = abs(penMotion.vel->vy);
   double vx_abs = abs(penMotion.vel->vx);
-
-  double angle = atan(vy_abs / vx_abs);
-
+  
   if (penMotion.vel->vx > 0 && penMotion.vel->vy > 0) {
     // NE  
-    if (angle < PI / 4) {
-      penState.dir = 'E';
+    if (vy_abs > vx_abs) {
+      penState.dir = 'N';  
     } else {
-        penState.dir = 'N';
+        penState.dir = 'E';  
     }
   } else if (penMotion.vel->vx > 0 && penMotion.vel->vy < 0) {
     // SE
-    if (angle < PI / 4) {
-      penState.dir = 'E';
+    if (vy_abs > vx_abs) {
+      penState.dir = 'S';  
     } else {
-        penState.dir = 'S';
+        penState.dir = 'E';  
     }
   } else if (penMotion.vel->vx < 0 && penMotion.vel->vy > 0) {
     // NW
-    if (angle < PI / 4) {
-      penState.dir = 'W';
+    if (vy_abs > vx_abs) {
+      penState.dir = 'N';  
     } else {
-        penState.dir = 'N';
+        penState.dir = 'W';  
     }
   } else {
     // SW
-    if (angle < PI / 4) {
-      penState.dir = 'W';
+    if (vy_abs > vx_abs) {
+      penState.dir = 'S';  
     } else {
-        penState.dir = 'S';
+        penState.dir = 'W';
     }
   }
 }
@@ -347,7 +344,8 @@ void loop() {
 
         if (moveCounter % QUEUE_SIZE == 0) {
           decideMove();
-          moveCounter = 0;  
+          moveCounter = 0; 
+          delay(3000); 
         }
 
         moveCounter += 1;
