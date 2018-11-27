@@ -1,14 +1,14 @@
 // POSITION FACTORS - DETERMINE THESE
 #define X_DISTANCE_FACTOR 1.0
-#define Y_DISTANCE_FACTOR 3.75
+#define Y_DISTANCE_FACTOR 1.5
 
 // SPEED TOLERANCE
-#define SPEED_THRESHOLD_UPPER 40 
-#define SPEED_THRESHOLD_LOWER 15
+#define SPEED_THRESHOLD_UPPER 0.5 
+#define SPEED_THRESHOLD_LOWER 0.1
 
 // LINEAR_TRANSITION_TOLERANCE
-#define X_TOLERANCE 1.0
-#define Y_TOLERANCE 1.0
+#define X_TOLERANCE 4.0
+#define Y_TOLERANCE 4.0
 
 // TIME BETWEEN FRAMES
 #define FRAME_TIME 16.5 // these are in millisecond
@@ -18,6 +18,8 @@
 
 // QUEUE SPECS
 #define QUEUE_SIZE 10
+
+#define DELAY 10000
 
 #include <Pixy2.h>
 
@@ -207,6 +209,12 @@ void updatePenVelocities() {
 
   penMotion.vel->vx = velocitySumX / (QUEUE_SIZE - 1);
   penMotion.vel->vy = velocitySumY / (QUEUE_SIZE - 1);
+
+  Serial.print("Velocity X component: ");
+  Serial.println(penMotion.vel->vx);
+
+  Serial.print("Velocity Y component: ");
+  Serial.println(penMotion.vel->vy);
 }
 
 void decideMove() {
@@ -320,8 +328,8 @@ void loop() {
   //Serial.println("Got blocks");
   // If there are detect blocks, print them!
   if (pixy.ccc.numBlocks) {
-    uint16_t x = pixy.ccc.blocks[0].m_x;
-    uint16_t y = pixy.ccc.blocks[0].m_y;
+    uint16_t x = pixy.ccc.blocks[0].m_x * X_DISTANCE_FACTOR;
+    uint16_t y = pixy.ccc.blocks[0].m_y * Y_DISTANCE_FACTOR;
 
 
     Serial.print("X value = ");
@@ -330,10 +338,10 @@ void loop() {
     Serial.println(pixy.ccc.blocks[0].m_y);
 
     if (setupCounter < QUEUE_SIZE) {
-      Serial.begin("Setting up");
+      //Serial.println("Setting up");
       frameListSetup(x, y);  
     } else {
-        Serial.begin("Set up complete");
+        //Serial.println("Set up complete");
         addBlockToFrameList(x, y);
 
         //printFrameList();
@@ -345,7 +353,7 @@ void loop() {
         if (moveCounter % QUEUE_SIZE == 0) {
           decideMove();
           moveCounter = 0; 
-          delay(3000); 
+          delay(DELAY); 
         }
 
         moveCounter += 1;
