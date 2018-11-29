@@ -28,7 +28,7 @@
 #define FRAME_TIME 16.5 // these are in millisecond
 
 // TURN AND TRACK FACTORS
-#define TURN_DEGREE 80
+#define TURN_DEGREE 100
 #define TRACK_DEGREE 100
 
 // BAUD
