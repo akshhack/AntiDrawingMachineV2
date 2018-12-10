@@ -131,7 +131,7 @@ void aroundTheWorld() {
 }
 
 void backAndForth() {
-  for (int i = 0; i < 5; i += 1) {
+  for (int i = 0; i < 2; i += 1) {
     track(80, 'B');
     track(80, 'F') ; 
   } 
@@ -387,8 +387,6 @@ void decideMove() {
   Serial.print("Pen direction is: ");
   Serial.println(penState.dir);
 
-//  track(30, 'B');
-
   switch (penState.dir) {
     case 'N':
       // CHECK FOR LINEARITY
@@ -482,7 +480,7 @@ void printFrameList() {
 
 void loop() {  
   aroundTheWorldCounter += 1;
-  if (aroundTheWorldCounter % 20 == 0) {
+  if (aroundTheWorldCounter % 1000 == 0) {
     aroundTheWorld();
     aroundTheWorldCounter = 0;    
   }
@@ -510,7 +508,7 @@ void loop() {
     }
   } else {
         backAndForthCounter += 1;
-        if (backAndForthCounter % 5 == 0) {
+        if (backAndForthCounter % 150 == 0) {
           backAndForth();
           backAndForthCounter = 0;    
         }
