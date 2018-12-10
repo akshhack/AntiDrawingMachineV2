@@ -35,7 +35,7 @@
 #define BAUD_RATE 115200
 
 // QUEUE SPECS
-#define QUEUE_SIZE 25
+#define QUEUE_SIZE 35
 
 #define DELAY 0
 
@@ -80,6 +80,8 @@ PenMotion penMotion = {&posInit, &velInit};
 PenState penState = {false, false, false, false, 'N'};
 int setupCounter = 0;
 int moveCounter = 0;
+int aroundTheWorldCounter = 0;
+int backAndForthCounter = 0;
 
 void setup() {
   digitalWrite(STEPPER_ENABLE_PIN, HIGH); // initialize drivers in disabled state
@@ -98,8 +100,41 @@ void setup() {
   digitalWrite(STEPPER_ENABLE_PIN, LOW);
 
   move(0, 0, true); // initialize to origin
-  
-  delay(1000);
+
+  // being the starting S shape
+  makeShapeS();
+}
+
+void makeShapeS() {
+  delay(5000);
+
+  // stage 1
+  turnClockwise(90);
+
+  // stage 2
+  track(60, 'B');
+
+  // stage 3
+  turnAntiClockwise(90);
+
+  // stage 4
+  track(60, 'F');
+
+  // stage 5
+  turnClockwise(90);
+}
+
+void aroundTheWorld() {
+  turnClockwise(360);
+  delay(100);
+  turnClockwise(360);
+}
+
+void backAndForth() {
+  for (int i = 0; i < 5; i += 1) {
+    track(80, 'B');
+    track(80, 'F') ; 
+  } 
 }
 
 /// ******* FRONT - END MOTION ******** ////
@@ -321,20 +356,6 @@ void updatePenVelocities() {
 
   penMotion.vel->vx = velocitySumX / (QUEUE_SIZE - 1);
   penMotion.vel->vy = velocitySumY / (QUEUE_SIZE - 1);
-
-//  if (abs(penMotion.vel->vx) < SPEED_MINIMUM) {
-//    penMotion.vel->vx = 0.0;  
-//  }
-//
-//  if (abs(penMotion.vel->vy < SPEED_MINIMUM)) {
-//    penMotion.vel->vy = 0.0;  
-//  }
-
-//  Serial.print("Velocity X component: ");
-//  Serial.println(penMotion.vel->vx);
-//
-//  Serial.print("Velocity Y component: ");
-//  Serial.println(penMotion.vel->vy);
 }
 
 void decideMove() {
@@ -459,24 +480,16 @@ void printFrameList() {
   }  
 }
 
-void loop() {
-  //turnClockwise(60);
-  //track(60, 'B');
-  //skid(60);
-//  Serial.println(penMotion.pos->x);
-  //Serial.println("Getting blocks");
+void loop() {  
+  aroundTheWorldCounter += 1;
+  if (aroundTheWorldCounter % 20 == 0) {
+    aroundTheWorld();
+    aroundTheWorldCounter = 0;    
+  }
   pixy.ccc.getBlocks();
-  //Serial.println("Got blocks");
-  // If there are detect blocks, print them!
   if (pixy.ccc.numBlocks) {
     uint16_t x = pixy.ccc.blocks[0].m_x * X_DISTANCE_FACTOR;
     uint16_t y = pixy.ccc.blocks[0].m_y * Y_DISTANCE_FACTOR;
-
-
-//    Serial.print("X value = ");
-//    Serial.println(pixy.ccc.blocks[0].m_x); // only take most relevant block
-//    Serial.print("Y value = ");
-//    Serial.println(pixy.ccc.blocks[0].m_y);
 
     if (setupCounter < QUEUE_SIZE) {
       frameListSetup(x, y);  
@@ -488,7 +501,6 @@ void loop() {
         updatePenVelocities();
 
         if (moveCounter % QUEUE_SIZE == 0) {
-          //printFrameList();
           decideMove();
           moveCounter = 0; 
           delay(DELAY); 
@@ -496,5 +508,11 @@ void loop() {
 
         moveCounter += 1;
     }
+  } else {
+        backAndForthCounter += 1;
+        if (backAndForthCounter % 5 == 0) {
+          backAndForth();
+          backAndForthCounter = 0;    
+        }
   }  
 }
